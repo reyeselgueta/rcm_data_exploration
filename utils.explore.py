@@ -37,11 +37,23 @@ def multi_map(data:xr.Dataset, x_map:dict, y_map:dict, fig_path:str, fig_name:st
             else:
                 current_lat = lat
                 current_lon = lon
+            dataAggregated = dataToPlot.mean(dim=[d for d in data[rcm_name][gcm_name].dims])
             im = ax.pcolormesh(dataToPlot.coords[current_lon].values, dataToPlot.coords[current_lat].values,
                                 dataToPlot,
                                 transform=ccrs.PlateCarree(),
                                 cmap=discreteCMAP,
                                 vmin=vlimits[0], vmax=vlimits[1])
+            
+            # Agregar el valor medio (dataAggregated) en la esquina inferior derecha
+            mean_val = float(dataAggregated.values)
+            ax.text(
+                0.98, 0.02, f"{mean_val:.2f}",  
+                transform=ax.transAxes,       
+                fontsize=12, color='black',
+                ha='right', va='bottom',     
+                bbox=dict(facecolor='white', alpha=0.5, edgecolor='none')  
+            )
+
 
     cax = fig.add_axes([0.925, 0.125, 0.02, 0.775])
     cbar = plt.colorbar(im, cax, orientation='vertical', spacing='uniform')
