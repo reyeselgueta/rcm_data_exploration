@@ -137,7 +137,8 @@ target_years = ['2081', '2086', '2091', '2096']
 
 for rcm_name in rcm_list:
     for gcm_name in gcm_list:
-
+        if data_prh_climatology[rcm_name][gcm_name] is None:
+            continue
         files = [
             f for f in utils.raw_filepath 
             if gcm_name in f and rcm_name in f
