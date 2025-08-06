@@ -1,11 +1,14 @@
 import xarray as xr
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature 
+
+
 def multi_map(data:xr.Dataset, x_map:dict, y_map:dict, fig_path:str, fig_name:str,
             vlimits:tuple=None, color:str='RdBu_r', cbar_limits:tuple=(0, 10, 10),
-            var=None, lon='lon', lat='lat'):
+            var=None, lon:str='lon', lat:str='lat', title:str=''):
 
     n_rows = len(y_map.keys())
     n_cols = len(x_map.keys())
@@ -37,7 +40,7 @@ def multi_map(data:xr.Dataset, x_map:dict, y_map:dict, fig_path:str, fig_name:st
             else:
                 current_lat = lat
                 current_lon = lon
-            dataAggregated = dataToPlot.mean(dim=[d for d in data[rcm_name][gcm_name].dims])
+            dataAggregated = dataToPlot.mean(dim=list(dataToPlot.dims))
             im = ax.pcolormesh(dataToPlot.coords[current_lon].values, dataToPlot.coords[current_lat].values,
                                 dataToPlot,
                                 transform=ccrs.PlateCarree(),
@@ -54,15 +57,16 @@ def multi_map(data:xr.Dataset, x_map:dict, y_map:dict, fig_path:str, fig_name:st
                 bbox=dict(facecolor='white', alpha=0.5, edgecolor='none')  
             )
 
-
     cax = fig.add_axes([0.925, 0.125, 0.02, 0.775])
     cbar = plt.colorbar(im, cax, orientation='vertical', spacing='uniform')
     ticks = np.linspace(vlimits[0], vlimits[1], int(np.floor(cbar_limits[1] - cbar_limits[0]))+1)
     cbar.set_ticks(ticks)
     cbar.ax.tick_params(labelsize=16)
+    plt.suptitle(title, fontsize=18)
     plt.subplots_adjust(top=0.95, bottom=0.05, wspace=0.002, hspace=0.002)
     plt.savefig(f'{fig_path}/{fig_name}', bbox_inches='tight')
     plt.close()
+
 
 
 
