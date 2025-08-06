@@ -55,10 +55,12 @@ for rcm_name in rcm_list:
         data_hist_selected = data_hist_rcm.where(data_hist_rcm.gcm_model==gcm_name, drop=True)
         if data_hist_selected.sizes.get("member", 0) == 0:
             continue
-        data_dx_climatology[rcm_name][gcm_name] = data_hist_selected.mean(dim='time').squeeze('member')
+        data_hist_selected_mean = data_hist_selected.mean(dim='time').squeeze('member')
+        data_dx_climatology[rcm_name][gcm_name] = data_hist_selected_mean
 
-utils.multi_map(data=data_dx_climatology, x_map=rcm_dict, y_map=gcm_dict, vlimits=(0, 70), var='rx1day',
-        color='RdBu_r', cbar_limits=(0, 10, 10), fig_path=FIGURES_PATH, fig_name='climatology_rx1day.png')
+utils.multi_map(data=data_dx_climatology, x_map=rcm_dict, y_map=gcm_dict, vlimits=(0, 80), var='rx1day',
+        color='Blues', cbar_limits=(0, 10, 10), title='Climatology rx1day - mm (Average rx1day over 20 years, 1986-2005)',
+        fig_path=FIGURES_PATH, fig_name='climatology_rx1day.png')
 
 # DELTA DX1DAY
 data_fut = xr.open_dataset(f'{data_url}rcp85/{target_var}_CORDEX-EUR-11_rcp85_mon_200601-210012_v02.nc')
@@ -72,12 +74,26 @@ for rcm_name in rcm_list:
         data_fut_selected = data_fut_rcm.where(data_fut_rcm.gcm_model==gcm_name, drop=True)
         if data_fut_selected.sizes.get("member", 0) == 0:
             continue
-        data_dx_delta[rcm_name][gcm_name] = data_fut_selected.mean(dim='time').squeeze('member') - data_dx_climatology[rcm_name][gcm_name]
+        data_fut_selected_mean = data_fut_selected.mean(dim='time').squeeze('member')
+        data_dx_delta[rcm_name][gcm_name] = data_fut_selected_mean - data_dx_climatology[rcm_name][gcm_name]
 
-utils.multi_map(data=data_dx_delta, x_map=rcm_dict, y_map=gcm_dict, vlimits=(-12, 12), var='rx1day',
-        color='RdBu_r', cbar_limits=(0, 10, 10), fig_path=FIGURES_PATH, fig_name='delta_rx1day.png')
+utils.multi_map(data=data_dx_delta, x_map=rcm_dict, y_map=gcm_dict, vlimits=(-10, 10), var='rx1day',
+        color='BrBG', cbar_limits=(0, 10, 10), title='Delta rx1day - mm (Average rx1day over 20 years, 1986-2005 as reference, and 2081-2100 as target.)',
+        fig_path=FIGURES_PATH, fig_name='delta_rx1day.png')
 
+# DELTA RX1DAY Relative
+for rcm_name in rcm_list:
+    for gcm_name in gcm_list:
+        fut = data_dx_delta[rcm_name][gcm_name]
+        ref = data_dx_climatology[rcm_name][gcm_name]
+        if fut is not None and ref is not None:
+            data_dx_delta[rcm_name][gcm_name] = (fut/ref)*100
+        else:
+            continue
 
+utils.multi_map(data=data_dx_delta, x_map=rcm_dict, y_map=gcm_dict, vlimits=(-80, 80), var='rx1day',
+        color='BrBG', cbar_limits=(0, 10, 10), title='Relative delta rx1day - % (Average rx1day over 20 years, 1986-2005 as reference, and 2081-2100 as target. (Target-Reference/Reference)x100)',
+        fig_path=FIGURES_PATH, fig_name='delta_rx1day_relative.png')
 
 # CLIMATOLOGY PRHMAX
 
@@ -101,6 +117,7 @@ for rcm_name in rcm_list:
         if not files_years:
             print(f"⚠️ No files for {gcm_name} + {rcm_name}")
             continue
+
         data_prh = xr.open_mfdataset(
             files_years, 
             combine="by_coords"
@@ -113,6 +130,7 @@ for rcm_name in rcm_list:
             data_prh_renamed = data_prh
             lat=data_prh_renamed.lat.compute()
             lon=data_prh_renamed.lon.compute()
+        
 
         data_prh_selected = data_prh.where(
             (lat >= lat_min) & (lat <= lat_max) &
@@ -128,8 +146,9 @@ for rcm_name in rcm_list:
 
         data_prh_climatology[rcm_name][gcm_name] = data_prh_max_mean
 
-utils.multi_map(data=data_prh_climatology, x_map=rcm_dict, y_map=gcm_dict, vlimits=(0, 300), var='prhmax',
-        color='RdBu_r', cbar_limits=(0, 10, 10), fig_path=FIGURES_PATH, fig_name='climatology_prhmax.png')
+utils.multi_map(data=data_prh_climatology, x_map=rcm_dict, y_map=gcm_dict, vlimits=(0, 250), var='prhmax',
+        color='Blues', cbar_limits=(0, 10, 10), title='Climatology prhmax (montly max prhmax) - mm (Average rx1day over 20 years, 1986-2005)',
+        fig_path=FIGURES_PATH, fig_name='climatology_prhmax.png')
 
 # DELTA PRHMAX
 data_prh_delta = {rcm_name:{gcm_name:None for gcm_name in gcm_list} for rcm_name in rcm_list}
@@ -138,6 +157,7 @@ target_years = ['2081', '2086', '2091', '2096']
 for rcm_name in rcm_list:
     for gcm_name in gcm_list:
         if data_prh_climatology[rcm_name][gcm_name] is None:
+            print("Salimos!")
             continue
         files = [
             f for f in utils.raw_filepath 
@@ -165,8 +185,8 @@ for rcm_name in rcm_list:
         else:
             data_prh_renamed = data_prh
             lat=data_prh_renamed.lat.compute()
-            lon=data_prh_renamed.lon.compute()        
-
+            lon=data_prh_renamed.lon.compute()
+        
         data_prh_selected = data_prh.where(
             (lat >= lat_min) & (lat <= lat_max) &
             (lon >= lon_min) & (lon <= lon_max),
@@ -182,6 +202,19 @@ for rcm_name in rcm_list:
         data_prh_delta[rcm_name][gcm_name] = data_prh_max_mean - data_prh_climatology[rcm_name][gcm_name]
 
 utils.multi_map(data=data_prh_delta, x_map=rcm_dict, y_map=gcm_dict, vlimits=(-50, 50), var='prhmax',
-        color='RdBu_r', cbar_limits=(0, 10, 10), fig_path=FIGURES_PATH, fig_name='delta_prhmax.png')
+        color='BrBG', cbar_limits=(0, 10, 10), title='Delta prhmax (montly max prhmax) - mm (Average rx1day over 20 years, 1986-2005 as reference, and 2081-2100 as target.)',
+        fig_path=FIGURES_PATH, fig_name='delta_prhmax.png')
 
+#DELTA PRHMAX Relative
+for rcm_name in rcm_list:
+    for gcm_name in gcm_list:
+        fut = data_prh_delta[rcm_name][gcm_name]
+        ref = data_prh_climatology[rcm_name][gcm_name]
+        if fut is not None and ref is not None:
+            data_prh_delta[rcm_name][gcm_name] = (fut/ref)*100
+        else:
+            continue
 
+utils.multi_map(data=data_prh_delta, x_map=rcm_dict, y_map=gcm_dict, vlimits=(-80, 80), var='prhmax',
+        color='BrBG', cbar_limits=(0, 10, 10), title='Relative delta prhmax (montly max prhmax) - % (Average rx1day over 20 years, 1986-2005 as reference, and 2081-2100 as target.(Target-Reference/Reference)x100))',
+        fig_path=FIGURES_PATH, fig_name='delta_prhmax_relative.png')
