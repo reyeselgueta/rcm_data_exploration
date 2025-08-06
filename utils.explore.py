@@ -1,9 +1,9 @@
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, BoundaryNorm
+from matplotlib.colors import ListedColormap
 import cartopy.crs as ccrs
-import cartopy.feature as cfeature 
+
 
 
 def multi_map(data:xr.Dataset, x_map:dict, y_map:dict, fig_path:str, fig_name:str,
