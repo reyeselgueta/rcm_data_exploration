@@ -62,12 +62,8 @@ def calculate_yearly_max(
 
     # Convert units if needed
     if ds[varname].attrs.get("units", "") == "kg m-2 s-1":
-        if freq == "1hr":
-            ds[varname] *= 3600
-            ds[varname].attrs["units"] = "mm/1hr"
-        elif freq in ["day", "daily"]:
-            ds[varname] *= 86400
-            ds[varname].attrs["units"] = "mm/day"
+        ds[varname] *= 3600
+        ds[varname].attrs["units"] = "mm/1hr"
 
     # Find closest grid point to the city
     lat = ds["lat"].values
