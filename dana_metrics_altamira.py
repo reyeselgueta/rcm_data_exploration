@@ -26,7 +26,8 @@ DATA_PATH_METRICS = '/gpfs/projects/meteo/WORK/reyesjsf/data/rcm-gcm/'
 
 ERA5_PATH = '/lustre/gmeteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/download/ERA5/pr/*.nc'
 ERA5_LAND_PATH = '/lustre/gmeteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/download/ERA5-land/pr/*.nc'
-CERRA_PATH = '/gpfs/projects/meteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/CERRA/final_products/climate_index/CERRA/pr/gr006/'
-CERRA_LAND_PATH = '/gpfs/projects/meteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/CERRA-land/final_products/Global/CERRA-land/year/cdd/gr006/day/'
+CERRA_PATH = '/gpfs/projects/meteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/CERRA/final_products/climate_index/CERRA/pr/gr006/*.nc'
+CERRA_LAND_PATH = '/gpfs/projects/meteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/CERRA-land/final_products/Global/CERRA-land/year/cdd/gr006/day/*.nc'
 EOBS_PATH = '/lustre/gmeteo/WORK/DATA/C3S-CDS/CDS-Curated-Data/raw/insitu-gridded-observations-europe/daily/native/rr/rr_insitu-gridded-observations-europe_1950-2024_31_0e.nc'
 ROCIO_PATH = '/lustre/gmeteo/WORK/reyess/data/predictand/AEMET_0.25deg/pr/*.nc'
+
