@@ -591,7 +591,8 @@ def mem_status(msg=""):
 colobar_limits = {
             'climatology': [(0, 20, 20), (0, 20, 20)],
             'delta': [(0, 20, 20), (0, 20, 20)],
-            'relative': [(0, 20, 20), (0, 20, 20)]
+            'relative': [(0, 20, 20), (0, 20, 20)],
+            'relative_per_degree': [(0, 20, 20), (0, 20, 20)]
         }
 value_limits = {
             'climatology': [(0,540), (0, 180)],

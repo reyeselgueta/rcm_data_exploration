@@ -71,8 +71,8 @@ for frecuency in frecuencies:
             data_to_plot[season][rcm_name][frecuency] = total_percentage
 
 for season in seasons:
-    utils.multi_map(data=data_to_plot[season], x_map=rcm_dict, y_map=frecuency_dict, vlimits=value_limits['relative'],
-                color=['BrBG', 'BrBG'], cbar_limits=colobar_limits['relative' if per_grade==False else 'relative_per_degree'],
+    utils.multi_map(data=data_to_plot[season], x_map=rcm_dict, y_map=frecuency_dict, vlimits=value_limits['relative_per_degree' if per_grade else 'relative'],
+                color=['BrBG', 'BrBG'], cbar_limits=colobar_limits['relative_per_degree' if per_grade else 'relative'],
                 title=f'Relative (per degree) {statistic}-{season} CNRM-MF vs BCCR-UCAN vs BCCR-UCAN_eur12 {'per °' if per_grade else ''}',
                 fig_path=FIGURES_PATH, fig_name=f'Relative_{statistic}_{season}_{target_coords}{'_per °' if per_grade else ''}.png')
                 #mask_dict = mask_dict)
