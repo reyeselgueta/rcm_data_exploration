@@ -20,3 +20,13 @@ conda-meta/
 # OS
 .DS_Store
 Thumbs.db
+
+# Imágenes
+*.png
+
+# Outputs de SLURM / logs
+*.out
+*.err
+
+# Carpeta específica
+deep4downscaling/
