@@ -117,7 +117,7 @@ for rcm_name, data_rcm in utils.data_rcm_paths.items():
         data_yearly = utils.get_season_data(data_selected, 'Annual', year_to_drop=2015)
         ds_combined = utils.get_statistic(data_yearly, statistic, time_multiplier, 'Annual', spatial=spatial)
 
-    ds_combined.to_netcdf(f"{DATA_PATH_METRICS}{folder_name}/climatology_{variable}_{frecuency}_{rcm_name}_{target_coords}_{statistic}_{years_scenario[0]}-{years_scenario[1]}.nc", compute=True)
+    ds_combined.to_netcdf(f"{DATA_PATH_METRICS}{folder_name}/climatology_{variable}_{frecuency}_{rcm_name}_{target_coords}_{statistic}{'_spatial' if spatial else ''}_{years_scenario[0]}-{years_scenario[1]}.nc", compute=True)
 
 
 time_end = time.time()
