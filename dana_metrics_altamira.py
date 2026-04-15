@@ -19,15 +19,14 @@ import deep4downscaling.metrics_ccs
 
 
 FIGURES_PATH = '/gpfs/users/reyesjsf/rcm-exploration/rcm_data_exploration/deep4downscaling/notebooks/figures'
-DATA_PATH_METRICS = '/gpfs/projects/meteo/WORK/reyesjsf/data/rcm-gcm/'
-DATA_PATH_METRICS = '/gpfs/projects/meteo/WORK/reyesjsf/data/rcm-gcm/'
+DATA_PATH_METRICS = '/gpfs/projects/meteo/WORK/reyesjsf/data/metrics/'
 
 
 
 ERA5_PATH = '/lustre/gmeteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/download/ERA5/pr/*.nc'
 ERA5_LAND_PATH = '/lustre/gmeteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/download/ERA5-land/pr/*.nc'
-CERRA_PATH = '/gpfs/projects/meteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/CERRA/download/CERRA/pr/*.nc'
-CERRA_LAND_PATH = '/gpfs/projects/meteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/CERRA-land/download/Global/CERRA-Land/pr/day/*.nc'
+CERRA_PATH = '/gpfs/projects/meteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/CERRA/download/CERRA/pr/'
+CERRA_LAND_PATH = '/gpfs/projects/meteo/WORK/PROYECTOS/2022_C3S_Atlas/workflow/datasets/CICAv2/CERRA-land/download/Global/CERRA-Land/pr/day/'
 EOBS_PATH = '/lustre/gmeteo/WORK/DATA/C3S-CDS/CDS-Curated-Data/raw/insitu-gridded-observations-europe/daily/native/rr/rr_insitu-gridded-observations-europe_1950-2024_31_0e.nc'
 ROCIO_PATH = '/lustre/gmeteo/WORK/reyess/data/predictand/AEMET_0.25deg/pr/*.nc'
 
@@ -38,7 +37,8 @@ lon_min, lon_max = lon[0], lon[1]
 lat_min, lat_max = lat[0], lat[1]
 
 # CERRA Dana day
-ds_cerra = xr.open_mfdataset(CERRA_PATH, combine='by_coords')
+#ds_cerra = xr.open_mfdataset(f"{CERRA_PATH}*.nc", combine='by_coords')
+ds_cerra = xr.open_dataset(f"{CERRA_PATH}total_precipitation-reanalysis-surface_or_atmosphere-forecast-24-CDS-2024-10-01_2024-10-31.nc")
 ds_cerra_dana = ds_cerra.sel(valid_time="2024-10-29")
 
 mask = (
@@ -50,9 +50,12 @@ mask = (
 mask = mask.compute()  # Compute the mask to avoid lazy evaluation issues
 
 ds_cerra_dana = ds_cerra_dana.where(mask, drop=True)
-
-# CERRA LAND Dana day
-ds_cerra_land = xr.open_mfdataset(CERRA_LAND_PATH, combine='by_coords')
+print(ds_cerra_dana)
+ds_cerra_dana.to_netcdf(f"{DATA_PATH_METRICS}CERRA_dana_mean_daily_2024-10-29.nc")
+# CERRA LAND Dana day (NO ESTA EL DATO)
+# ds_cerra_land = xr.open_mfdataset(f"{CERRA_LAND_PATH}*.nc", combine='by_coords')
+ds_cerra_land = xr.open_dataset(f"{CERRA_LAND_PATH}total_precipitation-reanalysis-surface_or_atmosphere-forecast-24-CDS-2024-10-01_2024-10-31.nc")
+    
 ds_cerra_land_dana = ds_cerra_land.sel(valid_time="2024-10-29T06:00:00.000000000", method='nearest')
 
 mask = (
@@ -64,6 +67,7 @@ mask = (
 mask = mask.compute()  # Compute the mask to avoid lazy evaluation issues
 
 ds_cerra_land_dana = ds_cerra_land_dana.where(mask, drop=True)
-
+print(ds_cerra_land_dana)
+ds_cerra_land_dana.to_netcdf(f"{DATA_PATH_METRICS}CERRA-Land_dana_mean_daily_2024-10-29.nc")
 
 

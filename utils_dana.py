@@ -45,23 +45,25 @@ class TimeSeriesPlot:
                 # if isinstance(data_element, xr.Dataset):
                 #     var_name = list(data_element.data_vars)[0]
                 #     data_element = data_element[var_name]
+                if isinstance(data_element, xr.Dataset):
+                    data_element = data_element.to_dataarray().squeeze()
                 #ax.plot(data_element[time_var], data_element, label=label, color=color, lw=1.5)
-                data_element['time'] = xr.DataArray(
-                    np.array(data_element['time'].values, dtype='datetime64[ns]'),
-                    dims='time'
-                )
+                # data_element['time'] = xr.DataArray(
+                #     np.array(data_element['time'].values, dtype='datetime64[ns]'),
+                #     dims='time'
+                # )
                 ax.plot(
-                    data_element[time_var].values,
-                    data_element.values,
+                    data_element[time_var],
+                    data_element,
                     label=label,
                     color=color,
                     lw=1.5,
                     marker=None
                 )
             # Guardar un handle para la leyenda global
-            if label not in self.legend_handles:
-                line = plt.Line2D([0], [0], color=color, lw=2)
-                self.legend_handles[label] = line
+            # if label not in self.legend_handles:
+            #     line = plt.Line2D([0], [0], color=color, lw=2)
+            #     self.legend_handles[label] = line
 
         ax.set_title(title, fontsize=9)
         if ylims is not None:
@@ -80,9 +82,9 @@ class TimeSeriesPlot:
             labels=labels,
             loc="upper right",
             ncol=int(np.ceil(len(labels) / 5)),
-            fontsize=10
+            fontsize=8
         )
-        self.fig.suptitle(title, fontsize=14)
+        self.fig.suptitle(title, fontsize=12)
         self.fig.tight_layout(rect=[0, 0, 1, 0.97])
         self.fig.savefig(savepath)
         #plt.close(self.fig)

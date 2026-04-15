@@ -3,6 +3,7 @@
 import time
 import xarray as xr
 import numpy as np
+import pandas as pd
 from pathlib import Path
 import sys
 import utils_explore as utils
@@ -26,16 +27,21 @@ MODELS_PATH = './models'
 ASYM_PATH = './data/asym'
 DATA_PATH_METRICS = '/gpfs/projects/meteo/WORK/reyesjsf/data/rcm-gcm/'
 
-# target_coords = sys.argv[1] # 'valencia' 'iberia' 'europe'
-# statistic = sys.argv[2] # 'max' or 'mean' or 'date_max''
-# spatial = sys.argv[3] # 'spatial' or 'aggregated'
-# per_grade = sys.argv[4] # 'True' or 'False'
+target_coords = sys.argv[1] # 'valencia' 'iberia' 'europe'
+statistic = sys.argv[2] # 'max' or 'mean' or 'date_max''
+spatial = sys.argv[3] # 'spatial' or 'aggregated'
+per_grade = sys.argv[4] # 'True' or 'False'
 
-target_coords = 'valencia'
-statistic = 'mean'
-spatial = 'False'
-per_grade = 'False'
+# target_coords = 'valencia'
+# statistic = 'mean'
+# spatial = 'False'
+# per_grade = 'False'
 
+def fix_time(ds):
+    if "time" in ds.coords:
+        ds = ds.assign_coords(time=pd.to_datetime(ds["time"].values))
+        ds = ds.sortby("time")
+    return ds
 
 spatial = True if spatial == 'True' else False
 per_grade = True if per_grade == 'True' else False
@@ -43,14 +49,15 @@ lat_center, lon_center, folder_name, grid_multiplier = utils.get_coords(target_c
 years_hist = ('1994', '2014') 
 years_future = ('2080', '2100')
 seasons = ['Annual', 'DJF', 'MAM', 'JJA', 'SON']
-frecuencies = ['day', '1hr']
+frecuencies = ['day', 'day']
 rcms = ['BCCR-UCAN', 'BCCR-UCAN_eur12', 'CNRM-MF']
 time_start = time.time()
 
 if spatial == True:
     # Dictionary to store metrics for plot
     data_to_plot = {season: {rcm_name: {frecuency: None for frecuency in frecuencies} for rcm_name in rcms} for season in seasons}
-
+    mask_dict = {rcm_name: None for rcm_name in objective_rcms}
+    data_rcm_dict = utils.data_rcm_path
     # We go over RCMs to load data
     for frecuency in frecuencies:
         for rcm_name in rcms:
@@ -72,6 +79,22 @@ if spatial == True:
                     total_percentage = total_percentage / tas_diff
                 data_to_plot[season][rcm_name][frecuency] = total_percentage
 
+            mask_data = xr.open_mfdataset(f"{data_rcm_dict[rcm_name]['ssp370']['fx']}*.nc")
+            lat=mask_data.lat.values
+            lon=mask_data.lon.values
+            abs_diff = np.abs(lat - lat_center) + np.abs(lon - lon_center)
+            iy, ix = np.unravel_index(np.argmin(abs_diff), lat.shape)
+
+            # Slice area around the city
+            grid_number = 90 if rcm_name != 'BCCR-UCAN_eur12' else 30
+            grid_number = grid_number * grid_multiplier
+            half_box = grid_number // 2
+            y_slice = slice(max(0, iy - half_box), iy + half_box)
+            x_slice = slice(max(0, ix - half_box), ix + half_box)
+
+            mask = mask_data['sftlf'].isel(y=y_slice, x=x_slice)
+            mask_dict[rcm_name] = mask
+
     for season in seasons:
         utils.multi_map(data=data_to_plot[season], x_map=rcm_dict, y_map=frecuency_dict, vlimits=value_limits['relative_per_degree' if per_grade else 'relative'],
                     color=['BrBG', 'BrBG'], cbar_limits=colobar_limits['relative_per_degree' if per_grade else 'relative'],
@@ -85,7 +108,9 @@ else:
         # data_to_plot = {frecuency: {rcm_name: None for rcm_name in rcms} for frecuency in frecuencies}
         for rcm_name in rcms:
             target_path = f"{DATA_PATH_METRICS}{folder_name}/climatology_pr_{frecuency}_{rcm_name}_{target_coords}_{statistic}{'_spatial' if spatial==True else ''}_{years_future[0]}-{years_future[1]}.nc"
-            data_to_plot[frecuency].append({'data_list':[xr.open_dataset(target_path).pr], 'label': rcm_name, 'color': colors[rcm_name]})
+            da = xr.open_dataset(target_path).pr
+            ds_fixed = fix_time(da)
+            data_to_plot[frecuency].append({'data_list': [ds_fixed], 'label': rcm_name, 'color': colors[rcm_name]})
 
 
     Plot = TimeSeriesPlot(n_rows=len(frecuencies), n_cols=1, figsize_scale=4)
