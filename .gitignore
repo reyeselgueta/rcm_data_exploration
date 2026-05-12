@@ -30,3 +30,6 @@ Thumbs.db
 
 # Carpeta específica
 deep4downscaling/
+
+# Raw paths
+raw_paths.py

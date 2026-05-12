@@ -1,4 +1,5 @@
 import xarray as xr
+import xesmf as xe
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -446,6 +447,21 @@ def get_coords(target_coords):
     
     return lat_center, lon_center, folder_name, grid_multiplier
 
+def get_slice_coords(area):
+    "Return lat and lon slices for the area"
+    lat_iberia = slice(34.12, 43.88)
+    lon_iberia = slice(-9.875, 5.875)
+    lat_valencia = slice(38, 41)
+    lon_valencia = slice(-2.5, 2.0)
+    if area == "Valencia":
+        lat_target = lat_valencia
+        lon_target = lon_valencia
+    elif area == "Iberia":
+        lat_target = lat_iberia
+        lon_target = lon_iberia
+
+    return lat_target, lon_target
+
 gcm_gwl3_years = {'CNRM-CM5': ('2058', '2077'), 'CanESM2': ('2040', '2059'),
             'EC-EARTH': ('2051', '2070'), 'HadGEM2-ES': ('2045', '2064'), 'IPSL-CM5A-MR': ('2041', '2060'),
             'MIROC5': ('2063', '2082'), 'MPI-ESM-LR': ('2052', '2071'), 'NorESM1-M': ('2063', '2082'),
@@ -476,9 +492,6 @@ custom_ticks_flux = np.array([0, 0.0002, 0.0005, 0.0010, 0.0015, 0.003, 0.0045, 
 custom_ticks_not_used = np.array([0, 0.1, 1, 2, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30])
 custom_ticks_3 = np.array([0, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500])
 
-raw_filepath = [
-'Fill with URL to data'
-]
 
 data_rcm_paths = {
     'RegCM5-0': 
@@ -603,3 +616,127 @@ value_limits = {
 rcm_dict = {'CNRM-MF': '3 Kilometers', 'BCCR-UCAN': '3 Kilometers', 'BCCR-UCAN_eur12': '12 Kilometers'}
 mask_dict = {'CNRM-MF': None, 'BCCR-UCAN': None, 'BCCR-UCAN_eur12': None}
 frecuency_dict = {'day': 'Daily', '1hr': 'Hourly'}
+
+
+def smart_regrid(ds, ds_ref, var="prhmax", method="bilinear", reuse_weights=False):
+
+    da = ds[var]
+    dims = set(da.dims)
+
+    has_wrong_dims = ("x" in dims and "y" in dims)
+    has_same_shape = (
+        len(ds.lon) == len(ds_ref.lon) and 
+        len(ds.lat) == len(ds_ref.lat)
+    )
+
+    # ----------------------------
+    # NO regrid → devolver limpio
+    # ----------------------------
+    if not has_wrong_dims and has_same_shape:
+        return ds
+
+    # ----------------------------
+    # grids espaciales
+    # ----------------------------
+    grid_in = xr.Dataset({
+        "lat": ds["lat"],
+        "lon": ds["lon"]
+    })
+
+    grid_out = xr.Dataset({
+        "lat": ds_ref["lat"],
+        "lon": ds_ref["lon"]
+    })
+
+    # ----------------------------
+    # regrid
+    # ----------------------------
+    regridder = xe.Regridder(
+        grid_in,
+        grid_out,
+        method,
+        reuse_weights=reuse_weights
+    )
+
+    da_out = regridder(da)
+
+    # ----------------------------
+    # construir dataset limpio
+    # ----------------------------
+    ds_out = xr.Dataset(
+        {var: da_out}
+    )
+
+    # ----------------------------
+    # copiar coords correctas (desde referencia)
+    # ----------------------------
+    for coord in ["rlat", "rlon", "lat", "lon"]:
+        if coord in ds_ref.coords:
+            ds_out = ds_out.assign_coords({coord: ds_ref[coord]})
+
+    # ----------------------------
+    # copiar season si existe
+    # ----------------------------
+    if "season" in ds.coords:
+        ds_out = ds_out.assign_coords(season=ds["season"])
+
+    # ----------------------------
+    # asegurar orden dims
+    # ----------------------------
+    if all(d in ds_out.dims for d in ["season", "rlat", "rlon"]):
+        ds_out = ds_out.transpose("season", "rlat", "rlon")
+
+    return ds_out
+
+
+def fix_latlon(ds):
+    if 'latitude' in ds.coords and 'longitude' in ds.coords:
+        ds = ds.drop_vars(['latitude', 'longitude'])
+    # Caso 1: ya tiene lat/lon → no tocar
+    if "lat" in ds.coords and "lon" in ds.coords:
+        return ds
+
+    rename_dict = {}
+
+    # Caso 2: usar newlat/newlon si existen
+    if "newlat" in ds.coords:
+        rename_dict["newlat"] = "lat"
+    if "newlon" in ds.coords:
+        rename_dict["newlon"] = "lon"
+
+    if rename_dict:
+        ds = ds.rename(rename_dict)
+
+    return ds
+
+def drop_xy_grid(ds):
+    # eliminar coordenadas asociadas a (y, x)
+    ds = ds.drop_vars(["lat", "lon"], errors="ignore")
+
+    # eliminar dimensiones x, y si no están en uso
+    ds = ds.drop_dims([d for d in ["x", "y"] if d in ds.dims])
+
+    return ds
+
+def filter_prhmax_files(file_list, gcm_name, rcm_name, target_years = None):
+    if target_years is None:
+        target_years = [str(year) for year in range(int(gcm_gwl3_years[gcm_name][0]), int(gcm_gwl3_years[gcm_name][1])+1)]
+
+    files = [
+        f for f in file_list
+        if gcm_name in f and rcm_name in f
+    ]
+    files_years = [
+        f for f in files 
+        if any(year in f for year in target_years)
+    ]
+    # 1970 r1 344 r12  1626 r1i1 62 r2i1p1 246
+    possible_members = ['r1i1p1', 'r12i1p1', 'r2i1p1', 'r3i1p1']
+    selected_files = []
+    for p in possible_members:
+        files_member = [f for f in files_years if p in f]
+        if files_member:
+            selected_files = files_member
+            break
+    
+    return selected_files

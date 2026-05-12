@@ -1,3 +1,15 @@
+Updated structure:
+
+Metrics are calculated in:
+    cmip5_metrics.py (modes )
+
+Plots for relative difference is calculated:
+
+
+Plots for ensemble area calculated here:
+
+
+DEPRECATED:
 The structure of this repository is as follows:
 
     explore.py: Loads the datasets (using xarray), processes them to compute statistics, and generates graphs (using matplotlib).

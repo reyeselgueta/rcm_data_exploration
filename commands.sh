@@ -50,3 +50,21 @@ sbatch toJobMetricPlot.sh valencia mean-max True False
 sbatch toJobMetricPlot.sh valencia max-max True False
 sbatch toJobMetricPlot.sh valencia mean-P95 True False
 sbatch toJobMetricPlot.sh valencia mean-P995 True False
+
+
+
+# CMIP5 metrics
+sbatch toJobMetricCMIP5.sh rx1day mon-mean
+sbatch toJobMetricCMIP5.sh rx1day yr-mean
+sbatch toJobMetricCMIP5.sh rx1day max-mean
+sbatch toJobMetricCMIP5.sh prhmax mon-mean
+sbatch toJobMetricCMIP5.sh prhmax yr-mean
+sbatch toJobMetricCMIP5.sh prhmax max-mean
+
+sbatch toJobMetricCMIP5.sh ensemble mon-mean
+sbatch toJobMetricCMIP5.sh ensemble yr-mean
+sbatch toJobMetricCMIP5.sh ensemble max-mean
+
+sbatch toJobPlotRelCMIP5.sh mon-mean
+sbatch toJobPlotRelCMIP5.sh yr-mean
+sbatch toJobPlotRelCMIP5.sh max-mean
