@@ -9,9 +9,12 @@ import utils_explore as utils
 
 DATA_PATH_METRICS = '/nfs/home/gmeteo/reyess/rcm_exploration/data/metrics/'
 FIG_PATH = '/nfs/home/gmeteo/reyess/rcm_exploration/rcm_data_exploration/example_figures/relatives/'
-# metric = sys.argv[1] # mon-mean, yr-mean, max-mean
-metric = "yr-mean" # mon-mean, yr-mean, max-mean
-area = "Valencia"
+metric = sys.argv[1] # mon-mean, yr-mean, max-mean
+area = sys.argv[2]
+# metric = "yr-mean" # mon-mean, yr-mean, max-mean
+# area = "Valencia"
+
+print(f"Doing metric: {metric} - area: {area}")
 
 lat_target, lon_target = utils.get_slice_coords(area)
 
@@ -28,15 +31,18 @@ gcm_gwl3_years = utils.gcm_gwl3_years
 relative_diff = {season: {rcm_name:{gcm_name:None for gcm_name in gcm_list} for rcm_name in rcm_list} for season in seasons}
 relative_rx1day = {rcm_name:{gcm_name:None for gcm_name in gcm_list} for rcm_name in rcm_list}
 relative_prhmax = {rcm_name:{gcm_name:None for gcm_name in gcm_list} for rcm_name in rcm_list}
+prhmax = {season: {rcm_name:{gcm_name:None for gcm_name in gcm_list} for rcm_name in rcm_list} for season in seasons}
+rx1day = {season: {rcm_name:{gcm_name:None for gcm_name in gcm_list} for rcm_name in rcm_list} for season in seasons}
+
 
 
 #prh_ref = xr.open_dataset(f'{DATA_PATH_METRICS}/hist_climatology_{metric}_prhmax_CNRM-CM5_CCLM4-8-17_1986-2005.nc')
-rx1day_ref = xr.open_dataset(f'{DATA_PATH_METRICS}/hist_climatology_{metric}_rx1day_CNRM-CM5_CCLM4-8-17_1986-2005.nc')
+rx1day_ref = xr.open_dataset(f'{DATA_PATH_METRICS}/hist_climatology_{area}_{metric}_rx1day_CNRM-CM5_CCLM4-8-17_1986-2005.nc')
 for rcm_name in rcm_list:
     for gcm_name in gcm_list:
         # Load metrics
-        path_hist_rx1day = f'{DATA_PATH_METRICS}/hist_climatology_{metric}_rx1day_{gcm_name}_{rcm_name}_1986-2005.nc'
-        path_fut_rx1day = f'{DATA_PATH_METRICS}/gwl3_climatology_{metric}_rx1day_{gcm_name}_{rcm_name}_{gcm_gwl3_years[gcm_name][0]}-{gcm_gwl3_years[gcm_name][1]}.nc'
+        path_hist_rx1day = f'{DATA_PATH_METRICS}/hist_climatology_{area}_{metric}_rx1day_{gcm_name}_{rcm_name}_1986-2005.nc'
+        path_fut_rx1day = f'{DATA_PATH_METRICS}/gwl3_climatology_{area}_{metric}_rx1day_{gcm_name}_{rcm_name}_{gcm_gwl3_years[gcm_name][0]}-{gcm_gwl3_years[gcm_name][1]}.nc'
         if not Path(path_hist_rx1day).is_file() or not Path(path_fut_rx1day).is_file():
             print(f"⚠️ Missing files for {gcm_name} + {rcm_name} - RX1DAY")
             continue
@@ -48,8 +54,8 @@ for rcm_name in rcm_list:
         relative_rx1day_temp = (metric_fut_rx1day - metric_hist_rx1day) / metric_hist_rx1day * 100
         relative_rx1day[rcm_name][gcm_name] = relative_rx1day_temp
 
-        path_hist_prhmax = f'{DATA_PATH_METRICS}/hist_climatology_{metric}_prhmax_{gcm_name}_{rcm_name}_1986-2005.nc'
-        path_fut_prhmax = f'{DATA_PATH_METRICS}/gwl3_climatology_{metric}_prhmax_{gcm_name}_{rcm_name}_{gcm_gwl3_years[gcm_name][0]}-{gcm_gwl3_years[gcm_name][1]}.nc'
+        path_hist_prhmax = f'{DATA_PATH_METRICS}/hist_climatology_{area}_{metric}_prhmax_{gcm_name}_{rcm_name}_1986-2005.nc'
+        path_fut_prhmax = f'{DATA_PATH_METRICS}/gwl3_climatology_{area}_{metric}_prhmax_{gcm_name}_{rcm_name}_{gcm_gwl3_years[gcm_name][0]}-{gcm_gwl3_years[gcm_name][1]}.nc'
         if not os.path.exists(path_hist_prhmax) or not os.path.exists(path_fut_prhmax):
             print(f"⚠️ Missing files for {gcm_name} + {rcm_name} in prhmax")
             continue
@@ -68,6 +74,8 @@ for rcm_name in rcm_list:
         relative_prhmax[rcm_name][gcm_name] = relative_prhmax_temp
 
         for season in seasons:
+            prhmax[season][rcm_name][gcm_name] = relative_prhmax_temp.sel(season=season)
+            rx1day[season][rcm_name][gcm_name] = relative_rx1day_temp.sel(season=season)
             relative_diff[season][rcm_name][gcm_name] = relative_prhmax_temp.sel(season=season) - relative_rx1day_temp.sel(season=season)
         # print("Relative difference (PRHMAX - RX1DAY)")
         # print(relative_diff[rcm_name][gcm_name])
@@ -77,7 +85,6 @@ for rcm_name in rcm_list:
 #             color='BrBG', cbar_limits=(0, 10, 10), title=f'Relative difference {season} prhmax - rx1day ({metric}) - % (Average rx1day over 20 years, 1986-2005 as reference, and gwl3 as target.))',
 #             fig_path=FIG_PATH, fig_name=f'Difference_Relatives_{metric}_{season}.png')
     
-
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -85,79 +92,92 @@ import numpy as np
 
 def plot_seasonal_matrix(data_dict, gcm_list, rcm_list,
                         var_name='yr-mean', title='None', fig_name='Nombre.png',
-                        color='BrBG'):
+                        color='BrBG', levels = np.linspace(-100, 100, 11) ):
     """
-    Plotea una matriz de mapas para una season específica.
-    Columnas: GCMs | Filas: RCMs
+    Plotea una matriz de mapas para una season específica de forma limpia y recta.
+    Filas: GCMs | Columnas: RCMs
     """
-    n_rows = len(rcm_list)
-    n_cols = len(gcm_list)
+    n_rows = len(gcm_list)
+    n_cols = len(rcm_list)
     
-    # Crear la figura con proyección Cartopy
-    # Ajustamos el tamaño según la cantidad de modelos
+    # Usamos PlateCarree para que todo quede perfectamente alineado y recto
+    proyeccion = ccrs.PlateCarree()
+    
     fig, axes = plt.subplots(
-        n_rows, n_cols, 
-        figsize=(n_cols * 5.2, n_rows * 3.2),
-        subplot_kw={'projection': ccrs.PlateCarree()},
+        n_rows, n_cols,
+        figsize=(n_cols * 3.5, n_rows * 3.0),
+        subplot_kw={'projection': proyeccion},
         sharex=True, sharey=True,
         constrained_layout=True
     )
     
-    # Definir niveles para un colorbar discreto (BrBG suele ser para diferencias)
-    # Puedes ajustar estos niveles según el rango de tus datos
-    levels = np.linspace(-100, 100, 11) # Ejemplo: de -100% a 100% con 10 saltos
+    # Configuración de escala de color fija (-100% a 100%)
     cmap = plt.get_cmap(color, len(levels) - 1)
 
-    for r_idx, rcm in enumerate(rcm_list):
-        for g_idx, gcm in enumerate(gcm_list):
+    for r_idx, gcm in enumerate(gcm_list):
+        for g_idx, rcm in enumerate(rcm_list):
             ax = axes[r_idx, g_idx]
-            
-            # Obtener el dataset del diccionario anidado
             ds = data_dict[rcm][gcm]
             
             if ds is not None:
-                # Plot de los datos
+                # Dibujar los datos
                 im = ds[var_name].plot(
-                    ax=ax, 
-                    transform=ccrs.PlateCarree(),
-                    levels=levels,
-                    cmap=cmap,
-                    add_colorbar=False, # Quitamos colorbars individuales
-                    add_labels=False    # Quitamos etiquetas de ejes internas
+                    ax=ax, transform=proyeccion, 
+                    levels=levels, cmap=cmap,
+                    add_colorbar=False, add_labels=False    
                 )
                 
-                # Añadir detalles geográficos
-                ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+                # Detalles geográficos mínimos y limpios
+                ax.add_feature(cfeature.COASTLINE, linewidth=0.6, edgecolor='black')
                 ax.add_feature(cfeature.BORDERS, linestyle=':', linewidth=0.5)
-                ax.set_extent([ds.lon.min(), ds.lon.max(), ds.lat.min(), ds.lat.max()])
+                
+                # Zoom a la zona de datos (Valencia)
+                ax.set_extent([ds.lon.min(), ds.lon.max(), ds.lat.min(), ds.lat.max()], crs=proyeccion)
             
-            # Títulos solo en la primera fila (GCMs)
+            # Títulos de las columnas (RCMs) en la fila superior
             if r_idx == 0:
-                ax.set_title(f"GCM: {gcm}", fontweight='bold', fontsize=16)
+                ax.set_title(rcm, fontweight='bold', fontsize=12)
             else:
                 ax.set_title("")
                 
-            # Etiquetas solo en la primera columna (RCMs)
+            # Etiquetas de las filas (GCMs) en la primera columna
             if g_idx == 0:
-                ax.text(-0.2, 0.5, f"RCM: {rcm}", transform=ax.transAxes, 
-                        rotation=90, va='center', ha='right', fontweight='bold', fontsize=16)
+                ax.set_ylabel(gcm, fontweight='bold', fontsize=12)
+                # Forzar a Cartopy a que muestre los nombres en el eje Y tradicional
+                ax.text(-0.25, 0.5, gcm, transform=ax.transAxes, 
+                        rotation=90, va='center', ha='right', fontweight='bold', fontsize=12)
 
-    # Añadir el Colorbar común al final de todos los subplots
-    cbar = fig.colorbar(
-        im, ax=axes, orientation='vertical', 
-        shrink=1.0, pad=0.03, aspect=30, extend='both'
-    )
-    cbar.set_label(f"Relative Difference (%)", fontsize=20, fontweight='bold')
-    cbar.ax.tick_params(labelsize=16) # Tamaño números colorbar
+    # Barra de color única para toda la matriz
+    cbar = fig.colorbar(im, ax=axes, orientation='vertical', shrink=0.7, pad=0.02, extend='both')
+    cbar.set_label("Relative Difference (%)", fontsize=14, fontweight='bold')
 
-    plt.suptitle(f"{title}", fontsize=24, fontweight='bold', y=1.05)
-    plt.savefig(f'{FIG_PATH}/{fig_name}', bbox_inches='tight')
+    plt.suptitle(title, fontsize=16, fontweight='bold', y=1.02)
+    plt.savefig(f'{fig_name}', bbox_inches='tight', dpi=150)
     plt.close()
-
 # --- Ejemplo de uso ---
+if metric == 'yr-mean':
+    levels = np.linspace(-80, 80)
+elif metric == 'max-mean':
+    levels = np.linspace(-120, 120)
+else:
+    levels = np.linspace(-50, 50)
+
 for season in seasons:
-    plot_seasonal_matrix(relative_diff[season], gcm_list, rcm_list,
-                        color = 'BrBG',
-                        title = f"Relative diff - metric:{metric} - season_{season}",
-                        fig_name =f"Difference_Relatives_{metric}_{season}.png" 
+    plot_seasonal_matrix(rx1day[season], gcm_list, rcm_list, var_name=metric,
+                        color = 'BrBG', levels=levels,
+                        title = f"Rx1day - metric:{metric} - season_{season}",
+                        fig_name =f"{FIG_PATH}/Rx1day_{area}_{metric}_{season}.png" 
                         )
+    print(f"Plot for rx1day done for season: {season}")
+    plot_seasonal_matrix(prhmax[season], gcm_list, rcm_list, var_name=metric,
+                        color = 'BrBG', levels=levels,
+                        title = f"Prhmax - metric:{metric} - season_{season}",
+                        fig_name =f"{FIG_PATH}/Prhmax_{area}_{metric}_{season}.png" 
+                        )
+    print(f"Plot for prhmax done for season: {season}")
+    plot_seasonal_matrix(relative_diff[season], gcm_list, rcm_list, var_name=metric,
+                        color = 'BrBG', levels=levels,
+                        title = f"Relative diff - metric:{metric} - season_{season}",
+                        fig_name =f"{FIG_PATH}/Difference_Relatives_{area}_{metric}_{season}.png" 
+                        )
+    print(f"Plot for relative diff done for season: {season}")

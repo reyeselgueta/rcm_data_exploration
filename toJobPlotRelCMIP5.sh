@@ -13,10 +13,10 @@
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate cdo-simple
-cd /gpfs/users/reyesjsf/rcm-exploration/rcm_data_exploration
+cd /nfs/home/gmeteo/reyess/rcm_exploration/rcm_data_exploration
 
 metric=$1
+area=$2
 
-
-python cmip5_plot_relative.py $metric
+python cmip5_plot_relative.py $metric $area
 

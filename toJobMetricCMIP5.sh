@@ -18,6 +18,7 @@ cd /nfs/home/gmeteo/reyess/rcm_exploration/rcm_data_exploration
 
 target_var=$1
 metric=$2
+area=$3
 
-python cmip5_metrics.py $target_var $metric
+python cmip5_metrics.py $target_var $metric $area
 # sbatch toJobMetricProcess.sh valencia 1hr mean historical pr True

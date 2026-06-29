@@ -54,17 +54,39 @@ sbatch toJobMetricPlot.sh valencia mean-P995 True False
 
 
 # CMIP5 metrics
-sbatch toJobMetricCMIP5.sh rx1day mon-mean
-sbatch toJobMetricCMIP5.sh rx1day yr-mean
-sbatch toJobMetricCMIP5.sh rx1day max-mean
-sbatch toJobMetricCMIP5.sh prhmax mon-mean
-sbatch toJobMetricCMIP5.sh prhmax yr-mean
-sbatch toJobMetricCMIP5.sh prhmax max-mean
+sbatch toJobMetricCMIP5.sh rx1day mon-mean Valencia
+sbatch toJobMetricCMIP5.sh rx1day yr-mean Valencia
+sbatch toJobMetricCMIP5.sh rx1day max-mean Valencia
+sbatch toJobMetricCMIP5.sh prhmax mon-mean Valencia
+sbatch toJobMetricCMIP5.sh prhmax yr-mean Valencia
+sbatch toJobMetricCMIP5.sh prhmax max-mean Valencia
 
-sbatch toJobMetricCMIP5.sh ensemble mon-mean
-sbatch toJobMetricCMIP5.sh ensemble yr-mean
-sbatch toJobMetricCMIP5.sh ensemble max-mean
+sbatch toJobMetricCMIP5.sh ensemble mon-mean Valencia
+sbatch toJobMetricCMIP5.sh ensemble yr-mean Valencia
+sbatch toJobMetricCMIP5.sh ensemble max-mean Valencia
+ 
+sbatch toJobMetricCMIP5.sh rx1day mon-mean Iberia
+sbatch toJobMetricCMIP5.sh rx1day yr-mean Iberia
+sbatch toJobMetricCMIP5.sh rx1day max-mean Iberia
+sbatch toJobMetricCMIP5.sh prhmax mon-mean Iberia
+sbatch toJobMetricCMIP5.sh prhmax yr-mean Iberia
+sbatch toJobMetricCMIP5.sh prhmax max-mean Iberia
 
-sbatch toJobPlotRelCMIP5.sh mon-mean
-sbatch toJobPlotRelCMIP5.sh yr-mean
-sbatch toJobPlotRelCMIP5.sh max-mean
+sbatch toJobMetricCMIP5.sh ensemble mon-mean Iberia
+sbatch toJobMetricCMIP5.sh ensemble yr-mean Iberia
+sbatch toJobMetricCMIP5.sh ensemble max-mean Iberia
+
+#PLOTS RELATIVOS fff
+sbatch toJobPlotRelCMIP5.sh mon-mean Valencia
+sbatch toJobPlotRelCMIP5.sh yr-mean Valencia
+sbatch toJobPlotRelCMIP5.sh max-mean Valencia
+sbatch toJobPlotRelCMIP5.sh mon-mean Iberia
+sbatch toJobPlotRelCMIP5.sh yr-mean Iberia
+sbatch toJobPlotRelCMIP5.sh max-mean Iberia
+# PLOTS ENSEMBLES
+sbatch toJobPlotEnsCMIP5.sh mon-mean Valencia
+sbatch toJobPlotEnsCMIP5.sh yr-mean Valencia
+sbatch toJobPlotEnsCMIP5.sh max-mean Valencia
+sbatch toJobPlotEnsCMIP5.sh mon-mean Iberia
+sbatch toJobPlotEnsCMIP5.sh yr-mean Iberia
+sbatch toJobPlotEnsCMIP5.sh max-mean Iberia

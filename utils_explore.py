@@ -66,7 +66,8 @@ def multi_map(
         axes = axes[:, np.newaxis]
 
     row_mappables = []
-    
+    if not isinstance(color, list):
+        color = [color] * n_rows
     for j, temporal_res in enumerate(y_map.keys()):
         is_over_max = False
         is_under_min = False
@@ -618,21 +619,33 @@ mask_dict = {'CNRM-MF': None, 'BCCR-UCAN': None, 'BCCR-UCAN_eur12': None}
 frecuency_dict = {'day': 'Daily', '1hr': 'Hourly'}
 
 
-def smart_regrid(ds, ds_ref, var="prhmax", method="bilinear", reuse_weights=False):
+def smart_regrid(ds, ds_ref, var="prhmax", method="bilinear", reuse_weights=False, space_coords = {"lat": "lat", "lon": "lon"}):
 
     da = ds[var]
     dims = set(da.dims)
 
     has_wrong_dims = ("x" in dims and "y" in dims)
-    has_same_shape = (
-        len(ds.lon) == len(ds_ref.lon) and 
-        len(ds.lat) == len(ds_ref.lat)
-    )
+    
+    # -------------------------------------------------------------------------
+    # 🔥 VERIFICACIÓN ESTRICTA: Comprobar si los valores numéricos son idénticos
+    # -------------------------------------------------------------------------
+    # Determinamos cuáles son los ejes de la rejilla que se van a usar de molde
+    x_dim = "rlon" if "rlon" in ds_ref.coords else "lon"
+    y_dim = "rlat" if "rlat" in ds_ref.coords else "lat"
+    
+    # Si las coordenadas existen en ambos datasets, verificamos si sus valores coinciden al 100%
+    if x_dim in ds.coords and y_dim in ds.coords:
+        same_coordinates = (
+            ds[x_dim].shape == ds_ref[x_dim].shape and np.allclose(ds[x_dim].values, ds_ref[x_dim].values) and
+            ds[y_dim].shape == ds_ref[y_dim].shape and np.allclose(ds[y_dim].values, ds_ref[y_dim].values)
+        )
+    else:
+        same_coordinates = False
 
     # ----------------------------
-    # NO regrid → devolver limpio
+    # NO regrid → devolver limpio si son exactamente la misma malla física
     # ----------------------------
-    if not has_wrong_dims and has_same_shape:
+    if not has_wrong_dims and same_coordinates:
         return ds
 
     # ----------------------------
@@ -694,6 +707,8 @@ def fix_latlon(ds):
         ds = ds.drop_vars(['latitude', 'longitude'])
     # Caso 1: ya tiene lat/lon → no tocar
     if "lat" in ds.coords and "lon" in ds.coords:
+        if 'newlat' in ds.coords and 'newlon' in ds.coords:
+            ds = ds.drop_vars(['newlat', 'newlon'])
         return ds
 
     rename_dict = {}
